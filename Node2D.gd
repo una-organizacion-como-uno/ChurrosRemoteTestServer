@@ -3,7 +3,7 @@ extends Node2D
 
 const port : int = 0x4348  # "CH"
 
-var server := UDPServer.new()
+var server := TCP_Server.new()
 var peers = []
 
 var data = {
@@ -28,10 +28,10 @@ func _exit_tree():
 	server.stop()
 
 func _process(delta):
-	server.poll() # Important!
+	#server.poll() # Important!
 	if server.is_connection_available():
-		var peer : PacketPeerUDP = server.take_connection()
-		print("Accepted peer: %s:%s" % [peer.get_packet_ip(), peer.get_packet_port()])
+		var peer : StreamPeerTCP = server.take_connection()
+		print("Accepted peer: %s:%s" % [peer.get_connected_host(), peer.get_connected_port()])
 		# Keep a reference so we can keep contacting the remote peer.
 		peers.append(peer)
 
@@ -39,28 +39,28 @@ func _process(delta):
 		_poll_peer(peer)
 		
 
-func _poll_peer( peer : PacketPeerUDP ):
-	if peer.get_available_packet_count():
+func _poll_peer( peer : StreamPeerTCP ):
+	if peer.get_available_bytes():
 		var command = peer.get_var()
 		_parse_command(peer, command)
 
-func _parse_command(peer : PacketPeerUDP, command : Array ):
+func _parse_command(peer : StreamPeerTCP, command ):
 	# CHECK INVALID PACKET
 	if typeof(command) != TYPE_ARRAY:
-		_error(peer, Responses.INVALID_DATA, "Received %s" % command)
+		peer.put_var(_error(Responses.INVALID_DATA, "Received %s" % command).as_array())
 		return
 	
 	# CHECK INVALID COMMAND
 	var command_name = command.pop_front()
 	var params = command
 	if not COMMAND_INFO.has(command_name):
-		_error(peer, Responses.INVALID_COMMAND, "Command %s doesn't exist" % command_name )
+		peer.put_var(_error(Responses.INVALID_COMMAND, "Command %s doesn't exist" % command_name ).as_array())
 		return
 	
 	# CHECK WRONG PARAM COUNT
 	var info = COMMAND_INFO[command_name]
 	if not info.parameters.size() == params.size():
-		_error(peer, Responses.INCORRECT_PARAM_COUNT, "Received %s argumentes, expected %s" % [params.size(), info.parameters.size()] )
+		peer.put_var(_error(Responses.INCORRECT_PARAM_COUNT, "Received %s argumentes, expected %s" % [params.size(), info.parameters.size()] ).as_array())
 		return
 	
 	# CHECK WRONG PARAM TYPE
@@ -68,7 +68,7 @@ func _parse_command(peer : PacketPeerUDP, command : Array ):
 		if info.parameters[i].has("type"):
 			var param_type = info.parameters[i].type
 			if typeof(params[i]) != param_type:
-				_error(peer, Responses.INCORRECT_PARAM_TYPE, "Received %s, expected %s" % [params[i], param_type])
+				peer.put_var(_error(Responses.INCORRECT_PARAM_TYPE, "Received %s, expected %s" % [params[i], param_type]))
 				return
 	
 	# CHECKS OK. CALL HANDLER
@@ -89,14 +89,16 @@ func _parse_command(peer : PacketPeerUDP, command : Array ):
 		Commands.GAME_PARAM_SET:
 			response = _game_param_set(params[0], params[1], params[2])
 		_:
-			_error(peer, Responses.BUG, "Unknown bug")
-			return
+			response = _error(Responses.BUG, "Unknown bug")
 	
 	# SEND RESPONSE TO PEER
+	if !response:
+		response = _error(Responses.BUG, "Unknown bug")
 	peer.put_var(response.as_array())
 
-func _error(peer : PacketPeerUDP, error_type : int = Responses.BUG , error_text := "" ):
-	peer.put_var(NetAPI.Response.new(error_type, { "message" : error_text }).as_array())
+func _error(error_type : int = Responses.BUG , error_text := "" ):
+	printerr(error_text)
+	return NetAPI.Response.new(error_type, { "message" : error_text })
 
 ## COMMAND HANDLERS
 
@@ -111,12 +113,16 @@ func _global_param_get( key : String):
 		response_data["param"] = { key : data.global[key] }
 		print_debug("got param %s" % [response_data])
 		return NetAPI.Response.new(Responses.OK, response_data)
+	else:
+		return _error(Responses.ERROR, "Global param key not found: %s" % key)
 	
 func _global_param_set( key : String, value ):
 	if data.global.has(key):
 		data.global[key] = value
 		print_debug("set param %s" % [{key : value}])
 		return _global_param_get(key)
+	else:
+		return _error(Responses.ERROR, "Global param key not found: %s" % key)
 
 	
 func _game_param_list( game : int ):
