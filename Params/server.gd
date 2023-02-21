@@ -131,8 +131,12 @@ func _error(error_type : int = Responses.BUG , error_text := "" ):
 ## COMMAND HANDLERS
 
 func _global_param_list():
-	
-	pass
+	var response_data = {}
+	response_data["event"] = "global_param_list_ready"
+	response_data["list"] = data.global.property_list
+	print_debug("sending property list:  %s" % response_data)
+	return NetAPI.Response.new(Responses.OK, response_data)
+
 	
 func _global_param_get( key : String):
 	if data.global.has(key):
