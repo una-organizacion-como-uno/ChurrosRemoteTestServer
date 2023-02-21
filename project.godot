@@ -21,8 +21,12 @@ _global_script_class_icons={
 [application]
 
 config/name="ChurrosRemoteTestServer"
-run/main_scene="res://Node2D.tscn"
+run/main_scene="res://Game.tscn"
 config/icon="res://icon.png"
+
+[autoload]
+
+ParamsServer="*res://Params/server.gd"
 
 [gui]
 

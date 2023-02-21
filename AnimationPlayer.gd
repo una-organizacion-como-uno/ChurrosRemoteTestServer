@@ -13,5 +13,5 @@ func _ready():
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
-	$"../Sprite".scale = get_parent().data.global.size * Vector2.ONE
-	playback_speed = get_parent().data.global.speed
+	$"../Sprite".scale = ParamsServer.data.global.size * Vector2.ONE
+	playback_speed = ParamsServer.data.global.speed

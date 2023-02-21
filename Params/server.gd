@@ -1,4 +1,4 @@
-extends Node2D
+extends Node
 
 
 const port : int = 0x4348  # "CH"
