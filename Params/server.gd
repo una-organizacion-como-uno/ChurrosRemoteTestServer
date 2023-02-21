@@ -82,21 +82,22 @@ func _parse_command(peer : StreamPeerTCP, command ):
 	var command_name = command.pop_front()
 	var params = command
 	if not COMMAND_INFO.has(command_name):
-		peer.put_var(_error(Responses.INVALID_COMMAND, "Command %s doesn't exist" % command_name ).as_array())
+		peer.put_var(_error(Responses.INVALID_COMMAND, "(%s %s) Command doesn't exist" % [command_name, params] ).as_array())
 		return
 	
 	# CHECK WRONG PARAM COUNT
 	var info = COMMAND_INFO[command_name]
 	if not info.parameters.size() == params.size():
-		peer.put_var(_error(Responses.INCORRECT_PARAM_COUNT, "Received %s argumentes, expected %s" % [params.size(), info.parameters.size()] ).as_array())
+		peer.put_var(_error(Responses.INCORRECT_PARAM_COUNT, "(%s %s) Received %s arguments, expected %s" % [Commands.keys()[command_name], params, params.size(), info.parameters.size()] ).as_array())
 		return
 	
 	# CHECK WRONG PARAM TYPE
 	for i in params.size():
 		if info.parameters[i].has("type"):
 			var param_type = info.parameters[i].type
+			var param_name = info.parameters[i].name
 			if typeof(params[i]) != param_type:
-				peer.put_var(_error(Responses.INCORRECT_PARAM_TYPE, "Received %s, expected %s" % [params[i], param_type]))
+				peer.put_var(_error(Responses.INCORRECT_PARAM_TYPE, "(%s %s) Invalid type: [arg %s %s] Received %s, expected %s" % [Commands.keys()[command_name], params, i, param_name, TypeEnumToString.get(typeof(params[i]), "invalid"), TypeEnumToString.get(param_type, "invalid")]).as_array())
 				return
 	
 	# CHECKS OK. CALL HANDLER
