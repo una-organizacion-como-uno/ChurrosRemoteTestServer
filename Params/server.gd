@@ -7,14 +7,42 @@ var server := TCP_Server.new()
 var peers = []
 
 var data = {
-	"global": {
-		"size" : 1,
-		"speed" : 0.5,
-		},
-	"games" : {
-		0 : {},
-	}
+	"global":{
+		"property_list": []
+		
+	},
 }  # Mockup data
+
+
+const TypeEnumToString = {
+	TYPE_NIL : "null",
+	TYPE_BOOL : "bool",
+	TYPE_INT : "int",
+	TYPE_REAL : "float",
+	TYPE_STRING : "String",
+	TYPE_VECTOR2 : "Vector2",
+	TYPE_RECT2 : "Rect2",
+	TYPE_VECTOR3 : "Vector3",
+	TYPE_TRANSFORM2D : "Transform2D",
+	TYPE_PLANE : "Plane",
+	TYPE_QUAT : "Quat",
+	TYPE_AABB : "AABB",
+	TYPE_TRANSFORM : "Transform",
+	TYPE_COLOR : "Color",
+	TYPE_NODE_PATH : "NodePath",
+	TYPE_RID : "RID",
+	TYPE_OBJECT : "Object",
+	TYPE_DICTIONARY : "Dictionary",
+	TYPE_ARRAY : "Array",
+	TYPE_RAW_ARRAY : "PoolByteArray",
+	TYPE_INT_ARRAY : "PoolIntArray",
+	TYPE_REAL_ARRAY : "PoolRealArray",
+	TYPE_STRING_ARRAY : "PoolStringArray",
+	TYPE_VECTOR2_ARRAY : "PoolVector2Array",
+	TYPE_VECTOR3_ARRAY : "PoolVector3Array",
+	TYPE_COLOR_ARRAY : "PoolColorArray",
+}
+
 
 #const Response = NetAPI.Response #GDscript bug
 const Commands = NetAPI.Commands
@@ -136,3 +164,12 @@ func _game_param_set( game : int, key : String, value ):
 	
 func _games_list():
 	pass
+
+
+func register_properties( node : Node ):
+	var props = node.get_property_list()
+	for prop in props:
+		if prop.name.begins_with("param_"):
+			data.global.property_list.append(prop)
+			data.global[prop.name] = node.get(prop.name)
+	print_debug(data)
