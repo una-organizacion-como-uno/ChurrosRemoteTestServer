@@ -50,6 +50,7 @@ const Responses = NetAPI.Responses
 const COMMAND_INFO = NetAPI.COMMAND_INFO
 
 func _ready():
+	yield(get_tree(),"idle_frame")
 	server.listen(port)
 
 func _exit_tree():
