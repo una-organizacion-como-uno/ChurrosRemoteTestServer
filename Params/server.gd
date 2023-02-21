@@ -110,7 +110,7 @@ func _global_param_get( key : String):
 	if data.global.has(key):
 		var response_data = {}
 		response_data["event"] = "global_param_changed"
-		response_data["param"] = { key : data.global[key] }
+		response_data["param"] = [key, data.global[key]]
 		print_debug("got param %s" % [response_data])
 		return NetAPI.Response.new(Responses.OK, response_data)
 	else:
